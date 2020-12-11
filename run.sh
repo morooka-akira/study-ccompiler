@@ -1,1 +1,1 @@
-docker run --rm -v /Users/mor/my-work/compiler:/home/user compilerbook $@
+docker run --rm -v /Users/mor/repos/my-work/github.com/morooka-akira/study-ccompiler:/home/user compilerbook $@
