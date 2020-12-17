@@ -1,62 +1,5 @@
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "9cc.h"
 
-typedef enum {
-    ND_ADD, // +
-    ND_SUB, // -
-    ND_MUL, // *
-    ND_DIV, // /
-    ND_EQ,  // ==
-    ND_NE,  // !=
-    ND_LT,  // <
-    ND_LE,  // <=
-    ND_NUM, // 整数
-} NodeKind;
-
-typedef struct Node Node;
-
-struct Node {
-    NodeKind kind;   // ノードの型
-    Node *lhs;       // 左辺(left hand side)
-    Node *rhs;       // 右辺(right hand side)
-    int val;         // kindがND_NUMのときのみ使用
-};
-
- // トークンの種類
- typedef enum {
-     TK_RESERVED, // 記号
-     TK_NUM, // 整数トークン
-     TK_EOF, // 入力の終わりを表すトークン
- } TokenKind;
-
-typedef struct Token Token;
-
-struct Token {
-    TokenKind kind; // トークンの型
-    Token *next;    // 次の入力トークン
-    int val;        // kindがTK_NUMの場合、その数値
-    char *str;      // トークン文字列
-    int len;        // トークンの長さ
-};
-
-// 現在着目しているトークン
-Token *token;
-
-// エラーを報告するための関数
-// printfと同じ引数をとる
-void error(char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-}
-
-char *user_input;
 // エラー箇所の報告
 void error_at(char *loc, char *fmt, ...) {
     va_list ap;
@@ -179,14 +122,6 @@ Token *tokenize() {
     return head.next;
 }
 
-Node *expr();
-Node *equality();
-Node *relational();
-Node *add();
-Node *mul();
-Node *primary();
-Node *unary();
-
 // expr = equality
 Node *expr() {
     return equality();
@@ -277,86 +212,3 @@ Node *primary() {
     return new_num(expect_number());
 }
 
-void gen(Node *node) {
-    if (node->kind == ND_NUM) {
-        printf("    push %d\n", node->val);
-        return;
-    }
-
-    gen(node->lhs);
-    gen(node->rhs);
-
-    printf("    pop rdi\n");
-    printf("    pop rax\n");
-
-    switch (node->kind) {
-        case ND_ADD:
-            printf("    add rax, rdi\n");
-            break;
-        case ND_SUB:
-            printf("    sub rax, rdi\n");
-            break;
-        case ND_MUL:
-            printf("    imul rax, rdi\n");
-            break;
-        case ND_DIV:
-            //  RAXに入っている64ビットの値を128ビットに拡張してRDXとRAXセットするための命令
-            printf("    cqo\n");
-            // 暗黙のうちにRDXとRAXをとって、それを合わせたものを128ビット整数とみなして、引数のレジストアの64ビットの値で
-            // 割り、商をRAXに、あまりをRDXにセットする
-            printf("    idiv rdi\n");
-            break;
-        case ND_EQ:
-            // raxとrdiを比較
-            printf("    cmp rax, rdi\n");
-            // alにフラグレジスタの値を格納
-            printf("    sete al\n");
-            // raxにフラグをコピー&余剰ビットを0クリア
-            printf("    movzb rax, al\n");
-            break;
-         case ND_NE:
-            printf("    cmp rax, rdi\n");
-            printf("    setne al\n");
-            printf("    movzb rax, al\n");
-            break;
-         case ND_LT:
-            printf("    cmp rax, rdi\n");
-            printf("    setl al\n");
-            printf("    movzb rax, al\n");
-            break;
-         case ND_LE:
-            printf("    cmp rax, rdi\n");
-            printf("    setle al\n");
-            printf("    movzb rax, al\n");
-            break;
-    }
-
-    printf("    push rax\n");
-}
-
-int main(int argc, char **argv) {
-    if (argc != 2) {
-        error("%s %d: invalid number of argments", argv[0], argc);
-        return 1;
-    }
-
-    // 入力を保持しておく
-    user_input = argv[1];
-    // トークナイズする
-    token = tokenize();
-    Node *node = expr();
-
-    // アセンブリの前半部分を出力
-    printf(".intel_syntax noprefix\n");
-    printf(".globl main\n");
-    printf("main:\n");
-
-    // 抽象構文木を下りながらコードを生成
-    gen(node);
-   
-    // スタックトップに式全体の値が残っているはずなので
-    // それをRAXにロードして関数からの戻り値とする
-    printf("    pop rax\n");
-    printf("    ret\n");
-    return 0;
-}
