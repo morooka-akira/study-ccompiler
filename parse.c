@@ -69,6 +69,13 @@ Node *new_num(int val) {
     return node;
 }
 
+Node *new_lvar(char name) {
+    Node *node = new_node(ND_LVAR);
+    node->name = name;
+    node->offset = (name - 'a' + 1) * 8;
+    return node;
+}
+
 // 新しいトークンを作成してcurにつなげる
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     Token *tok = calloc(1, sizeof(Token));
@@ -77,6 +84,14 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     tok->len = len;
     cur->next = tok;
     return tok;
+}
+
+Token *consume_ident() {
+  if (token->kind != TK_IDENT)
+    return NULL;
+  Token *t = token;
+  token = token->next;
+  return t;
 }
 
 // 文字列の比較
@@ -104,8 +119,13 @@ Token *tokenize() {
             continue;
         }
 
-        if (strchr("+-*/()<>", *p)) {
+        if (strchr("+-*/()<>;=", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
+            continue;
+        }
+
+        if ('a' <= *p && *p <= 'z' || strchr("=", *p)) {
+            cur = new_token(TK_IDENT, cur, p++, 1);
             continue;
         }
 
@@ -122,9 +142,37 @@ Token *tokenize() {
     return head.next;
 }
 
+// stmt*
+Node* program() {
+    Node head;
+    head.next = NULL;
+    Node *cur = &head;
+    int i = 0;
+    while (!at_eof()) {
+        cur->next = stmt();
+    }
+    return head.next;
+}
+
+// stmt = expr ";"
+Node *stmt() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
 // expr = equality
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+// assign = equality ("=" assign)?
+Node *assign() {
+    Node *node = equality();
+    if (consume("=")) {
+        node = new_binary(ND_ASSIGN, node, assign());
+    }
+    return node;
 }
 
 // equality = relational ("==" relational | "!=" relational)*
@@ -208,6 +256,11 @@ Node *primary() {
         Node *node = expr();
         expect(")");
         return node;
+    }
+
+    Token *tok = consume_ident();
+    if (tok) {
+        return new_lvar(*tok->str);
     }
     return new_num(expect_number());
 }

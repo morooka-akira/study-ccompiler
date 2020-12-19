@@ -49,4 +49,9 @@ assert 1 '1>=0'
 assert 1 '1>=1'
 assert 0 '1>=2'
 
+# 変数
+assert 42 '42;'
+assert 3 'a=3;'
+assert 12 'a=b=12;'
+assert 3 'a=2; b=3;'
 echo OK
