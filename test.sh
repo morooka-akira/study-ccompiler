@@ -53,4 +53,5 @@ assert 0 '1>=2'
 assert 42 '42;'
 assert 3 'a=3;'
 assert 12 'a=b=12;'
+assert 123 'foo = 123;'
 echo OK

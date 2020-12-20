@@ -9,6 +9,12 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
     cur->next = tok;
     return tok;
 }
+bool is_alpha(char c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+bool is_alnum(char c) {
+  return is_alpha(c) || ('0' <= c && c <= '9');
+}
 
 Token *tokenize() {
     char *p = user_input;
@@ -35,8 +41,14 @@ Token *tokenize() {
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z' || strchr("=", *p)) {
-            cur = new_token(TK_IDENT, cur, p++, 1);
+        // 変数は頭は英字のみ
+        if (is_alpha(*p)) {
+            char *q = p++;
+            // 2文字目以降は数字も可能
+            while (is_alnum(*p)) {
+                p++;
+            }
+            cur = new_token(TK_IDENT, cur, q, p - q);
             continue;
         }
 

@@ -1,4 +1,10 @@
 #include "9cc.h"
+char *strndup(char *p, int len) {
+  char *buf = malloc(len + 1);
+  strncpy(buf, p, len);
+  buf[len] = '\0';
+  return buf;
+}
 
 // エラー箇所の報告
 void error_at(char *loc, char *fmt, ...) {
@@ -69,10 +75,32 @@ Node *new_num(int val) {
     return node;
 }
 
-Node *new_lvar(char name) {
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next) {
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+            return var;
+        }
+    }
+    return NULL;
+}
+
+Node *new_lvar(Token *tok) {
     Node *node = new_node(ND_LVAR);
-    node->name = name;
-    node->offset = (name - 'a' + 1) * 8;
+
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+        node->offset = lvar->offset;
+    } else {
+        // トークナイズされた時点では文字列の終端\0が無いのでコピーして新しい文字列を作る
+        char *str = strndup(tok->str, tok->len);
+        lvar = calloc(1, sizeof(LVar));
+        lvar->name = str;
+        lvar->len = tok->len;
+        lvar->next = locals;
+        node->offset = lvar->offset;
+        locals = lvar;
+    }
+    node->var = lvar;
     return node;
 }
 
@@ -207,7 +235,7 @@ Node *primary() {
 
     Token *tok = consume_ident();
     if (tok) {
-        return new_lvar(*tok->str);
+        return new_lvar(tok);
     }
     return new_num(expect_number());
 }

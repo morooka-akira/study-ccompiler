@@ -21,12 +21,22 @@ typedef enum {
 
 typedef struct Node Node;
 
+typedef struct LVar LVar;
+
+struct LVar {
+    LVar *next; // 次の変数かNULL
+    char *name; // 変数の名前
+    int len;    // 名前の長さ
+    int offset; // RBPからのオフセット
+};
+
+
 struct Node {
     NodeKind kind;   // ノードの型
     Node *next;
     Node *lhs;       // 左辺(left hand side)
     Node *rhs;       // 右辺(right hand side)
-    char name;       // kindがND_LVARのときのみ(変数名を指す)
+    LVar *var;
     int val;         // kindがND_NUMの場合のみ使用
     int offset;      // ベースポインタからのオフセットを表す。kindがND_LVARの場合のみ使用。
 };
@@ -48,6 +58,9 @@ struct Token {
     char *str;      // トークン文字列
     int len;        // トークンの長さ
 };
+
+// ローカル変数
+LVar *locals;
 
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);

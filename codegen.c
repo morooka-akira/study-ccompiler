@@ -6,7 +6,7 @@ void gen_lval(Node *node) {
         return;
     }
     printf("    mov rax, rbp\n");
-    printf("    sub rax, %d\n", node->offset);
+    printf("    sub rax, %d\n", node->var->offset);
     printf("    push rax\n");
 }
 
@@ -97,10 +97,15 @@ void codegen(Node *node) {
     printf("main:\n");
 
     // プロローグ
-    // 変数26個分(a~z)の領域を確保
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
-    printf("    sub rsp, 208\n");
+    // 変数分の領域を確保
+    int offset = 0;
+    for (LVar *var = locals; var; var = var->next) {
+        offset += 8;
+        var->offset = offset;
+    }
+    printf("    sub rsp, %d\n", offset);
 
     for (Node *n = node; n; n = n->next) {
         gen(n);

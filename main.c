@@ -5,7 +5,6 @@ int main(int argc, char **argv) {
         error("%s %d: invalid number of argments", argv[0], argc);
         return 1;
     }
-
     // 入力を保持しておく
     user_input = argv[1];
     // トークナイズする
