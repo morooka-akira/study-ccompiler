@@ -59,6 +59,13 @@ Token *tokenize() {
             cur->len = p - q;
             continue;
         }
+
+        if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
         error_at(p, "Invalid token");
     }
     new_token(TK_EOF, cur, p, 0);
