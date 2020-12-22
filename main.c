@@ -7,9 +7,11 @@ int main(int argc, char **argv) {
     }
     // 入力を保持しておく
     user_input = argv[1];
+
     // トークナイズする
     token = tokenize();
-    Node *node = expr();
+
+    Node *node = program();
 
     // 抽象構文木を下りながらコードを生成
     codegen(node);

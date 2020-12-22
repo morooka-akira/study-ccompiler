@@ -26,16 +26,30 @@ void store() {
 void gen(Node *node) {
     switch (node->kind) {
         case ND_NUM:
+//            printf("gen: ND_NUM\n");
             printf("    push %d\n", node->val);
             return;
         case ND_LVAR:
+//            printf("gen: ND_LVAR\n");
             gen_lval(node);
             load();
             return;
         case ND_ASSIGN:
+//            printf("gen: ND_ASSIGN\n");
             gen_lval(node->lhs);
             gen(node->rhs);
             store();
+            return;
+        case ND_EXPR_STMT:
+//            printf("gen: ND_EXPR_STMT\n");
+            gen(node->lhs);
+            printf("    add rsp, 8\n");
+            return;
+        case ND_RETURN:
+//            printf("gen: ND_RETURN\n");
+            gen(node->lhs);
+            printf("    pop rax\n");
+            printf("    jmp .Lreturn\n");
             return;
     }
 
@@ -114,6 +128,7 @@ void codegen(Node *node) {
 
     // プロローグ
     // 最後の式の結果がRAXに残っているのでそれが戻り値になる
+    printf(".Lreturn:\n");
     printf("    mov rsp, rbp\n");
     printf("    pop rbp\n");
     // RAXにロードして関数からの戻り値とする

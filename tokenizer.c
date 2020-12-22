@@ -28,7 +28,6 @@ Token *tokenize() {
             p++;
             continue;
         }
-
         if (startswith(p,  "==") || startswith(p,  "!=") ||
                 startswith(p,  "<=") ||startswith(p,  ">=")) {
             cur = new_token(TK_RESERVED, cur, p, 2);
@@ -38,6 +37,12 @@ Token *tokenize() {
 
         if (strchr("+-*/()<>;=", *p)) {
             cur = new_token(TK_RESERVED, cur, p++, 1);
+            continue;
+        }
+
+        if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
             continue;
         }
 
@@ -57,12 +62,6 @@ Token *tokenize() {
             char *q = p;
             cur->val = strtol(p, &p, 10);
             cur->len = p - q;
-            continue;
-        }
-
-        if (strncmp(p, "return", 6) == 0 && !is_alnum(p[6])) {
-            cur = new_token(TK_RETURN, cur, p, 6);
-            p += 6;
             continue;
         }
 

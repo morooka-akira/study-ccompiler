@@ -23,9 +23,22 @@ void error_at(char *loc, char *fmt, ...) {
 // 次のトークンが期待している記号のときには、トークンを1つ読み進めて
 // 真を返す。それ以外の場合には偽を返す。
 bool consume(char *op) {
-    if (token->kind != TK_RESERVED || 
+    //printf("op: %s\n", op);
+    //printf("kind: %d\n", token->kind);
+    //printf("str: %s\n", token->str);
+    //printf("len: %d\n", token->len);
+    if (token->kind != TK_RESERVED ||
             strlen(op) != token->len || 
             memcmp(token->str, op, token->len))
+        return false;
+    token = token->next;
+    return true;
+}
+
+bool consume_return() {
+    if (token->kind != TK_RETURN ||
+            6 != token->len || 
+            memcmp(token->str, "return", token->len))
         return false;
     token = token->next;
     return true;
@@ -45,7 +58,7 @@ bool consume(char *op) {
  // それ以外の場合にはエラーを報告する
 int expect_number() {
     if (token->kind != TK_NUM)
-         error_at(token->str, "expected a number");
+        error_at(token->str, "expected a number");
     int val = token->val;
     token = token->next;
     return val;
@@ -125,13 +138,23 @@ Node* program() {
     int i = 0;
     while (!at_eof()) {
         cur->next = stmt();
+        cur = cur->next;
     }
     return head.next;
 }
 
-// stmt = expr ";"
+// stmt = return expr ";" | expr
 Node *stmt() {
-    Node *node = expr();
+    Node *node;
+    if (consume_return()) {
+        node = new_node(ND_RETURN);
+        node->lhs = expr();
+        expect(";");
+        return node;
+    }
+    node = expr();
+    //node = new_node(ND_EXPR_STMT);
+    //node->lhs = expr();
     expect(";");
     return node;
 }
